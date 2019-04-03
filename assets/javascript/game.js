@@ -4,12 +4,11 @@ var DeckTypes = {
     "Defender": "DEFENDER"
 }
 
-var TRANSITION_SPEED_MS = 500;
+var TRANSITION_SPEED_MS = 200;
 
 Object.freeze(DeckTypes);
 
 jQuery.fn.extend({
-    // Modified and Updated by MLM
     // Origin: Davy8 (http://stackoverflow.com/a/5212193/796832)
     parentToAnimate: function (newParent, duration) {
         duration = duration || 'slow';
@@ -45,6 +44,7 @@ jQuery.fn.extend({
             'height': newHeight
         }, duration, function () {
             $element.show();
+            $element.addClass();
             temp.remove();
         });
     }
@@ -52,21 +52,23 @@ jQuery.fn.extend({
 
 function starWarsGame() {
     this.gameDecks = [],
+        this.gameCharacter = null,
+        this.defenderCharacter = null,
         this.init = function () {
 
-            var ObiWanCharacter = new Character("Obi-Wan Kenoby", 8, 120);
-            var LukeSkywalkerCharacter = new Character("Luke Skywalker", 15, 100);
-            var DarkSidiousCharacter = new Character("Darth Sidious", 22, 80);
-            var DarthMaulCharacter = new Character("Darth Maul", 18, 150);
+            var ObiWanCharacter = new Character("Obi-Wan Kenoby", 8, 8, 120);
+            var LukeSkywalkerCharacter = new Character("Luke Skywalker", 15, 15, 100);
+            var DarkSidiousCharacter = new Character("Darth Sidious", 22, 22, 80);
+            var DarthMaulCharacter = new Character("Darth Maul", 18, 18, 150);
 
             var ObiWanCharacterTile = new CharacterTile(ObiWanCharacter, "/assets/images/obiwan.png");
             var LukeSkywalkerCharacterTile = new CharacterTile(LukeSkywalkerCharacter, "/assets/images/luke.png");
             var DarkSidiousCharacterTile = new CharacterTile(DarkSidiousCharacter, "/assets/images/dark.png");
             var DarthMaulCharacterTile = new CharacterTile(DarthMaulCharacter, "/assets/images/darth.png");
 
-            var characterPickDeck = new Deck(DeckTypes.CharacterPick);
-            var enemiesDeck = new Deck(DeckTypes.Enemies);
-            var defenderDeck = new Deck(DeckTypes.Defender);
+            var characterPickDeck = new Deck(DeckTypes.CharacterPick, this);
+            var enemiesDeck = new Deck(DeckTypes.Enemies, this);
+            var defenderDeck = new Deck(DeckTypes.Defender, this);
 
             this.addDeck(characterPickDeck);
             this.addDeck(enemiesDeck);
@@ -77,11 +79,60 @@ function starWarsGame() {
             this.getDeck(DeckTypes.CharacterPick).addTile(DarkSidiousCharacterTile, true);
             this.getDeck(DeckTypes.CharacterPick).addTile(DarthMaulCharacterTile, true);
 
-            this.attachSelectionEvent(ObiWanCharacterTile);
-            this.attachSelectionEvent(LukeSkywalkerCharacterTile);
-            this.attachSelectionEvent(DarkSidiousCharacterTile);
-            this.attachSelectionEvent(DarthMaulCharacterTile);
+            this.initiateCharacterSelection(ObiWanCharacterTile);
+            this.initiateCharacterSelection(LukeSkywalkerCharacterTile);
+            this.initiateCharacterSelection(DarkSidiousCharacterTile);
+            this.initiateCharacterSelection(DarthMaulCharacterTile);
 
+        },
+        this.attackOpponent = function () {
+            if (this.gameCharacter != null && this.defenderCharacter != null) {
+
+                var attackPts = this.gameCharacter.attack();
+                this.defenderCharacter.takeAttack(attackPts);
+
+                $('#FIGHT_COMMENTS').empty();
+                $('#FIGHT_COMMENTS').append('<p>You attacked ' + this.defenderCharacter.name + ' for ' + attackPts + ' damage.<br></p>');
+
+                if (this.defenderCharacter.lifePts == 0) {
+                    $('#attackButton').off('click');
+                    $('#FIGHT_COMMENTS').append('<p>You have defeated ' + this.defenderCharacter.name + ', you can choose to fight another enemy.<br></p>');
+                } else if (this.defenderCharacter.lifePts > 0) {
+                    var counterAttackPts = this.defenderCharacter.counterAttack();
+                    this.gameCharacter.takeAttack(counterAttackPts);
+
+                    $('#FIGHT_COMMENTS').append('<p>' + this.defenderCharacter.name + ' attacked you back for ' + counterAttackPts + ' damage.<br></p>');
+                    if (this.gameCharacter.lifePts == 0) {
+                        $('#attackButton').off('click');
+                        $('#FIGHT_COMMENTS').append('<p>You were defeated! Game Over...<br></p>');
+                    }
+                }
+
+                this.refreshActiveDecks();
+
+            }
+        },
+        this.refreshActiveDecks = function () {
+
+            var defenderDeck = this.getDeck(DeckTypes.Defender);
+            var characterPickDeck = this.getDeck(DeckTypes.CharacterPick);
+
+            for (var characterIndex = 0; characterIndex < defenderDeck.characterTiles.length; characterIndex++) {
+                $('#' + defenderDeck.characterTiles[characterIndex].div_id + '__LIFEPTS').text(defenderDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                if (defenderDeck.characterTiles[characterIndex].tileCharacter.lifePts == 0) {
+                    $('#' + defenderDeck.characterTiles[characterIndex].div_id).fadeOut("slow", function () {
+                        $('#' + defenderDeck.characterTiles[characterIndex].div_id).css('display', 'none');
+                    });
+                }
+            }
+            for (var characterIndex = 0; characterIndex < characterPickDeck.characterTiles.length; characterIndex++) {
+                $('#' + characterPickDeck.characterTiles[characterIndex].div_id + '__LIFEPTS').text(characterPickDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                if (characterPickDeck.characterTiles[characterIndex].tileCharacter.lifePts == 0) {
+                    $('#' + defenderDeck.characterTiles[characterIndex].div_id).fadeOut("slow", function () {
+                        $('#' + defenderDeck.characterTiles[characterIndex].div_id).css('display', 'none');
+                    });
+                }
+            }
         },
         this.addDeck = function (deck) {
             this.gameDecks.push(deck);
@@ -95,7 +146,8 @@ function starWarsGame() {
                 return returnValue[0];
             }
         },
-        this.attachSelectionEvent = function (tile) {
+        this.initiateCharacterSelection = function (tile) {
+            $('#' + tile.div_id + '__SELECT').off('click');
             $('#' + tile.div_id + '__SELECT').click({
                 tile: tile,
                 allTiles: this.getDeck(DeckTypes.CharacterPick).characterTiles,
@@ -103,6 +155,7 @@ function starWarsGame() {
                 endDeck: this.getDeck(DeckTypes.Enemies)
             }, function (s, e) {
 
+                window.CURRENT_GAME.gameCharacter = tile.tileCharacter;
                 var tileIndex = 0;
                 var totalIterations = s.data.allTiles.length;
 
@@ -113,6 +166,7 @@ function starWarsGame() {
                         s.data.startDeck.removeTile(currentTile);
                         s.data.endDeck.addTile(currentTile, false);
                         currentTile.moveToDeck(s.data.endDeck.name);
+                        window.CURRENT_GAME.initiateDefenderSelection(currentTile);
                         tileIndex--;
                     }
                     tileIndex++;
@@ -121,6 +175,34 @@ function starWarsGame() {
                 }
 
                 transferTile();
+
+            });
+        },
+        this.initiateDefenderSelection = function (tile) {
+            $('#' + tile.div_id + '__SELECT').off('click');
+            $('#' + tile.div_id + '__SELECT').click({
+                tile: tile,
+                allTiles: this.getDeck(DeckTypes.Enemies).characterTiles,
+                startDeck: this.getDeck(DeckTypes.Enemies),
+                endDeck: this.getDeck(DeckTypes.Defender)
+            }, function (s, e) {
+
+                for (var tileIndex = 0; tileIndex < s.data.allTiles.length; tileIndex++) {
+                    var currentTile = s.data.allTiles[tileIndex];
+                    if (currentTile.id == s.data.tile.id) {
+                        window.CURRENT_GAME.defenderCharacter = currentTile.tileCharacter;
+                        s.data.startDeck.removeTile(currentTile);
+                        s.data.endDeck.addTile(currentTile, false);
+                        currentTile.moveToDeck(s.data.endDeck.name);
+                        break;
+                    }
+                }
+
+                $('#attackButton').prop('disabled', false);
+                $('#attackButton').off('click');
+                $('#attackButton').click(function (s) {
+                    window.CURRENT_GAME.attackOpponent();
+                });
 
             });
         }
@@ -150,20 +232,14 @@ function CharacterTile(character) {
     this.id = character.name,
         this.tileCharacter = character,
         this.div_id = "CHAR_TILE__" + character.name.replace(' ', '_'),
-        /* this.div_tile =
-        '<div id="' + this.div_id + '" class="col-xs-12 col-sm-12 col-md-6 col-lg-3 mb-4">' +
-        '<div class="card" style="">' +
-        '<div class="card-header"><h5 class="card-title text-center">' + character.name + '</h5></div>' +
-        '<img class="card-img-top" src="https://dummyimage.com/200" alt="Card image cap">' +
-        '<div class="card-body"><p class="card-text text-center">' + character.lifePoints + '</p></div></div></div>',   */
         this.div_tile = '<div id="' + this.div_id + '" class="col-md-3 col-md-offset-3">' +
         '<div class="card">' +
         '<div class="card-image">' +
-        '<img class="img-responsive" src="https://dummyimage.com/255">' +
+        '<img class="img-responsive" src="https://lorempixel.com/255/255">' +
         '</div>' +
         '<div class="card-content">' +
         '<span class="card-title">' + character.name + '</span>' +
-        '<span class="badge badge-danger pull-right">' + character.lifePoints + '</span>' +
+        '<span class="badge badge-danger pull-right" id="' + this.div_id + '__LIFEPTS">' + character.lifePts + '</span>' +
         /*'<button type="button" id="show" class="btn btn-custom pull-right" aria-label="Left Align">' +
         '<i class="fa fa-ellipsis-v"></i>' +
         '</button>' +*/
@@ -172,24 +248,36 @@ function CharacterTile(character) {
         '<a href="#" target="new_blank" id="' + this.div_id + '__SELECT">Select</a>' +
         '</div>' +
         '<div class="card-reveal">' +
-        '<span class="card-title">Card Title</span> <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>'
-    '<p>Here is some more information about this product that is only revealed once clicked on.</p>' +
-    '</div>' +
-    '</div>' +
-    '</div>',
-    this.moveToDeck = function (deckType) {
-        $('#' + this.div_id).parentToAnimate($('#DECK__' + deckType), TRANSITION_SPEED_MS);
-    }
-}
-
-function Character(name, initialAttack, lifePoints) {
-    this.name = name,
-        this.attack = initialAttack,
-        this.lifePoints = lifePoints,
-        this.increaseAttack = function (increase) {
-            this.attack += increase;
+        '</div>' +
+        '</div>' +
+        '</div>',
+        this.moveToDeck = function (deckType) {
+            $('#' + this.div_id).parentToAnimate($('#DECK__' + deckType), TRANSITION_SPEED_MS);
         }
 }
 
+function Character(name, initialAttack, counterAttack, lifePoints) {
+    this.name = name,
+        this.attackPtsIncrease = initialAttack,
+        this.attackPts = initialAttack,
+        this.counterAttackPts = counterAttack,
+        this.lifePts = lifePoints,
+        this.attack = function () {
+            var currentAttackPts = this.attackPts;
+            this.attackPts += this.attackPtsIncrease;
+            return currentAttackPts;
+        },
+        this.counterAttack = function () {
+            return this.counterAttackPts;
+        },
+        this.takeAttack = function (attackStrength) {
+            this.lifePts -= attackStrength;
+            if (this.lifePts < 0)
+                this.lifePts = 0;
+        }
+
+}
+
 var game = new starWarsGame();
-game.init();
+window.CURRENT_GAME = game;
+window.CURRENT_GAME.init();
