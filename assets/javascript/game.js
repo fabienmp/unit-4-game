@@ -4,7 +4,7 @@ var DeckTypes = {
     "Defender": "DEFENDER"
 }
 
-var TRANSITION_SPEED_MS = 200;
+var TRANSITION_SPEED_MS = 400;
 
 Object.freeze(DeckTypes);
 
@@ -193,7 +193,6 @@ function starWarsGame() {
                 }
 
                 transferTile();
-
 
             });
         },

@@ -2,11 +2,13 @@ body {
     background-image: url(../images/background.jpg);
     background-color: #fff;
     font-size: 1em;
+    font-family: 'Rajdhani', sans-serif;
 }
 
 .cardDeckLabel
 {
     color: white;
+    font-size: 2em;
 }
 
 #FIGHT_COMMENTS
