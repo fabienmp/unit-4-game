@@ -97,6 +97,10 @@ function starWarsGame() {
                 if (this.defenderCharacter.lifePts == 0) {
                     $('#attackButton').off('click');
                     $('#FIGHT_COMMENTS').append('<p>You have defeated ' + this.defenderCharacter.name + ', you can choose to fight another enemy.<br></p>');
+                    window.CURRENT_GAME.getDeck(DeckTypes.Enemies).showSelection();
+                    for (var tileIndex = 0; tileIndex < window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles.length; tileIndex++) {
+                        window.CURRENT_GAME.initiateDefenderSelection(window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles[tileIndex]);
+                    }
                 } else if (this.defenderCharacter.lifePts > 0) {
                     var counterAttackPts = this.defenderCharacter.counterAttack();
                     this.gameCharacter.takeAttack(counterAttackPts);
@@ -117,19 +121,29 @@ function starWarsGame() {
             var defenderDeck = this.getDeck(DeckTypes.Defender);
             var characterPickDeck = this.getDeck(DeckTypes.CharacterPick);
 
+            var div_id = "";
             for (var characterIndex = 0; characterIndex < defenderDeck.characterTiles.length; characterIndex++) {
-                $('#' + defenderDeck.characterTiles[characterIndex].div_id + '__LIFEPTS').text(defenderDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                div_id = defenderDeck.characterTiles[characterIndex].div_id;
+                $('#' + div_id + '__LIFEPTS').text(defenderDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                $('#' + div_id + '__ATTACKPTS').text(defenderDeck.characterTiles[characterIndex].tileCharacter.attackPts);
                 if (defenderDeck.characterTiles[characterIndex].tileCharacter.lifePts == 0) {
-                    $('#' + defenderDeck.characterTiles[characterIndex].div_id).fadeOut("slow", function () {
-                        $('#' + defenderDeck.characterTiles[characterIndex].div_id).css('display', 'none');
+                    $('#' + div_id).fadeOut({
+                        div_id: div_id
+                    }, "slow", function () {
+                        $('#' + s.data.div_id).css('display', 'none');
                     });
                 }
             }
+
             for (var characterIndex = 0; characterIndex < characterPickDeck.characterTiles.length; characterIndex++) {
-                $('#' + characterPickDeck.characterTiles[characterIndex].div_id + '__LIFEPTS').text(characterPickDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                div_id = characterPickDeck.characterTiles[characterIndex].div_id;
+                $('#' + div_id + '__LIFEPTS').text(characterPickDeck.characterTiles[characterIndex].tileCharacter.lifePts);
+                $('#' + div_id + '__ATTACKPTS').text(characterPickDeck.characterTiles[characterIndex].tileCharacter.attackPts);
                 if (characterPickDeck.characterTiles[characterIndex].tileCharacter.lifePts == 0) {
-                    $('#' + defenderDeck.characterTiles[characterIndex].div_id).fadeOut("slow", function () {
-                        $('#' + defenderDeck.characterTiles[characterIndex].div_id).css('display', 'none');
+                    $('#' + div_id).fadeOut({
+                        div_id: div_id
+                    }, "slow", function () {
+                        $('#' + s.data.div_id).css('display', 'none');
                     });
                 }
             }
@@ -149,51 +163,57 @@ function starWarsGame() {
         this.initiateCharacterSelection = function (tile) {
             $('#' + tile.div_id + '__SELECT').off('click');
             $('#' + tile.div_id + '__SELECT').click({
-                tile: tile,
-                allTiles: this.getDeck(DeckTypes.CharacterPick).characterTiles,
-                startDeck: this.getDeck(DeckTypes.CharacterPick),
-                endDeck: this.getDeck(DeckTypes.Enemies)
+                tile: tile
             }, function (s, e) {
+
+                var allTiles = window.CURRENT_GAME.getDeck(DeckTypes.CharacterPick).characterTiles;
+                var startDeck = window.CURRENT_GAME.getDeck(DeckTypes.CharacterPick);
+                var endDeck = window.CURRENT_GAME.getDeck(DeckTypes.Enemies);
 
                 window.CURRENT_GAME.gameCharacter = tile.tileCharacter;
                 var tileIndex = 0;
-                var totalIterations = s.data.allTiles.length;
+                var totalIterations = allTiles.length;
 
                 function transferTile() {
 
-                    var currentTile = s.data.allTiles[tileIndex];
+                    var currentTile = allTiles[tileIndex];
                     if (currentTile.id != s.data.tile.id) {
-                        s.data.startDeck.removeTile(currentTile);
-                        s.data.endDeck.addTile(currentTile, false);
-                        currentTile.moveToDeck(s.data.endDeck.name);
+                        startDeck.removeTile(currentTile);
+                        endDeck.addTile(currentTile, false);
+                        currentTile.moveToDeck(endDeck.name);
                         window.CURRENT_GAME.initiateDefenderSelection(currentTile);
                         tileIndex--;
                     }
                     tileIndex++;
-                    if (s.data.allTiles.length > 1)
+                    if (allTiles.length > 1) {
                         setTimeout(transferTile, TRANSITION_SPEED_MS + 100);
+                    } else {
+                        window.CURRENT_GAME.getDeck(DeckTypes.CharacterPick).hideSelection();
+                    }
                 }
 
                 transferTile();
+
 
             });
         },
         this.initiateDefenderSelection = function (tile) {
             $('#' + tile.div_id + '__SELECT').off('click');
             $('#' + tile.div_id + '__SELECT').click({
-                tile: tile,
-                allTiles: this.getDeck(DeckTypes.Enemies).characterTiles,
-                startDeck: this.getDeck(DeckTypes.Enemies),
-                endDeck: this.getDeck(DeckTypes.Defender)
+                tile: tile
             }, function (s, e) {
 
-                for (var tileIndex = 0; tileIndex < s.data.allTiles.length; tileIndex++) {
-                    var currentTile = s.data.allTiles[tileIndex];
+                var allTiles = window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles;
+                var startDeck = window.CURRENT_GAME.getDeck(DeckTypes.Enemies);
+                var endDeck = window.CURRENT_GAME.getDeck(DeckTypes.Defender);
+
+                for (var tileIndex = 0; tileIndex < allTiles.length; tileIndex++) {
+                    var currentTile = allTiles[tileIndex];
                     if (currentTile.id == s.data.tile.id) {
                         window.CURRENT_GAME.defenderCharacter = currentTile.tileCharacter;
-                        s.data.startDeck.removeTile(currentTile);
-                        s.data.endDeck.addTile(currentTile, false);
-                        currentTile.moveToDeck(s.data.endDeck.name);
+                        startDeck.removeTile(currentTile);
+                        endDeck.addTile(currentTile, false);
+                        currentTile.moveToDeck(endDeck.name);
                         break;
                     }
                 }
@@ -203,7 +223,8 @@ function starWarsGame() {
                 $('#attackButton').click(function (s) {
                     window.CURRENT_GAME.attackOpponent();
                 });
-
+                window.CURRENT_GAME.getDeck(DeckTypes.Enemies).hideSelection();
+                window.CURRENT_GAME.getDeck(DeckTypes.Defender).hideSelection();
             });
         }
 }
@@ -225,6 +246,28 @@ function Deck(name) {
             });
             this.characterTiles.splice(indexToRemove, 1);
             //$('#' + tile.div_id).remove();
+        },
+        this.hideSelection = function () {
+            for (var characterIndex = 0; characterIndex < this.characterTiles.length; characterIndex++) {
+                var selector = '#' + this.characterTiles[characterIndex].div_id + '__SELECT';
+                $(selector).off('click');
+                $(selector).fadeOut({
+                    selector: selector
+                }, "slow", function () {
+                    $(s.data.selector).css('display', 'none');
+                });
+            }
+        },
+        this.showSelection = function () {
+            for (var characterIndex = 0; characterIndex < this.characterTiles.length; characterIndex++) {
+                var selector = '#' + this.characterTiles[characterIndex].div_id + '__SELECT';
+                $(selector).off('click');
+                $(selector).fadeIn({
+                    selector: selector
+                }, "slow", function () {
+                    $(s.data.selector).css('display', 'initial');
+                });
+            }
         }
 }
 
@@ -235,17 +278,19 @@ function CharacterTile(character) {
         this.div_tile = '<div id="' + this.div_id + '" class="col-md-3 col-md-offset-3">' +
         '<div class="card">' +
         '<div class="card-image">' +
-        '<img class="img-responsive" src="https://lorempixel.com/255/255">' +
+        '<img class="img-responsive" src="assets/images/' + character.name.replace(' ', '_') + '.jpg">' +
         '</div>' +
         '<div class="card-content">' +
         '<span class="card-title">' + character.name + '</span>' +
-        '<span class="badge badge-danger pull-right" id="' + this.div_id + '__LIFEPTS">' + character.lifePts + '</span>' +
         /*'<button type="button" id="show" class="btn btn-custom pull-right" aria-label="Left Align">' +
         '<i class="fa fa-ellipsis-v"></i>' +
         '</button>' +*/
         '</div>' +
         '<div class="card-action">' +
-        '<a href="#" target="new_blank" id="' + this.div_id + '__SELECT">Select</a>' +
+        '<span class="badge badge-danger" id="' + this.div_id + '__LIFEPTS">' + character.lifePts + '</span> Life<br>' +
+        '<span class="badge badge-primary" id="' + this.div_id + '__ATTACKPTS">' + character.attackPts + '</span> Attack<br>' +
+        '<span class="badge badge-dark" id="' + this.div_id + '__CTATTACKPTS">' + character.counterAttackPts + '</span> Counter Attack<br><br>' +
+        '<a href="#" target="new_blank" class="SELECT_BUTTON" id="' + this.div_id + '__SELECT">Select Character</a>' +
         '</div>' +
         '<div class="card-reveal">' +
         '</div>' +
