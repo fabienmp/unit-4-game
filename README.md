@@ -1,6 +1,6 @@
 # Star Wars Game
 
-This browser RPG game is themed around the Star Wars and its characters.
+This browser RPG game is themed around the Star Wars series and its characters.
 
 ## Getting Started
 
