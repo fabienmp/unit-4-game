@@ -101,6 +101,10 @@ function starWarsGame() {
                     for (var tileIndex = 0; tileIndex < window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles.length; tileIndex++) {
                         window.CURRENT_GAME.initiateDefenderSelection(window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles[tileIndex]);
                     }
+                    if(window.CURRENT_GAME.getDeck(DeckTypes.Enemies).characterTiles.length == 0)
+                    {
+                        $('#FIGHT_COMMENTS').append('<p>You have won the game!<br></p>');
+                    }
                 } else if (this.defenderCharacter.lifePts > 0) {
                     var counterAttackPts = this.defenderCharacter.counterAttack();
                     this.gameCharacter.takeAttack(counterAttackPts);
